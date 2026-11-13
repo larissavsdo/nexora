@@ -1,0 +1,95 @@
+{
+  "metodologia": "Consultas sequenciais em uma conexão; transação com SET LOCAL para desativar índices, sem remover índices; tempo medido no cliente SQLAlchemy.",
+  "total_tickets": 100000,
+  "consulta": "SELECT id, subject, status, created_at FROM tickets WHERE status = 'open' ORDER BY created_at DESC LIMIT 20",
+  "resumo": {
+    "com_indice": {
+      "amostras": 20,
+      "media_ms": 0.8974518500963313,
+      "mediana_ms": 0.8864715000527212,
+      "p95_ms": 1.1507072000767948,
+      "min_ms": 0.6619530004172702,
+      "max_ms": 1.198496000142768
+    },
+    "sem_indice": {
+      "amostras": 20,
+      "media_ms": 19.345380050026506,
+      "mediana_ms": 18.6160920002294,
+      "p95_ms": 23.46062414981134,
+      "min_ms": 17.39249300044321,
+      "max_ms": 29.412757000500278
+    },
+    "razao_mediana_sem_sobre_com": 21.00021489593545
+  },
+  "amostras_ms": {
+    "com_indice": [
+      0.9149730003628065,
+      1.0749860002761125,
+      0.7077569998727995,
+      1.0400829996797256,
+      0.724857999557571,
+      0.8501680003973888,
+      0.6830550000813673,
+      0.9957789998225053,
+      0.8187650000763824,
+      0.8803709997664555,
+      0.6619530004172702,
+      0.953876000494347,
+      0.9926789998644381,
+      0.8781710002949694,
+      1.1481920000733226,
+      0.9219740004482446,
+      0.7446600002367632,
+      0.892572000338987,
+      0.8656689997224021,
+      1.198496000142768
+    ],
+    "sem_indice": [
+      18.67939700059651,
+      18.646194000211835,
+      19.264442999883613,
+      18.31856799981324,
+      17.99434199983807,
+      17.39249300044321,
+      18.72910000020056,
+      23.147353999775078,
+      18.319568000151776,
+      18.321567999919353,
+      17.994042000282207,
+      17.65171500028373,
+      20.44593799928407,
+      18.913215999418753,
+      18.06884799952968,
+      19.427156000347168,
+      19.478860999697645,
+      18.11605100010638,
+      18.585990000246966,
+      29.412757000500278
+    ]
+  },
+  "planos": {
+    "com_indice": [
+      "Limit  (cost=0.42..14.04 rows=20 width=65) (actual time=0.043..0.074 rows=20 loops=1)",
+      "  Buffers: shared hit=23",
+      "  ->  Index Scan using ix_tickets_status_created on tickets  (cost=0.42..13598.16 rows=19963 width=65) (actual time=0.042..0.071 rows=20 loops=1)",
+      "        Index Cond: ((status)::text = 'open'::text)",
+      "        Buffers: shared hit=23",
+      "Planning Time: 0.144 ms",
+      "Execution Time: 0.140 ms"
+    ],
+    "sem_indice": [
+      "Limit  (cost=5046.21..5046.26 rows=20 width=65) (actual time=20.096..20.102 rows=20 loops=1)",
+      "  Buffers: shared hit=3265",
+      "  ->  Sort  (cost=5046.21..5096.12 rows=19963 width=65) (actual time=20.094..20.097 rows=20 loops=1)",
+      "        Sort Key: created_at DESC",
+      "        Sort Method: top-N heapsort  Memory: 29kB",
+      "        Buffers: shared hit=3265",
+      "        ->  Seq Scan on tickets  (cost=0.00..4515.00 rows=19963 width=65) (actual time=0.011..16.288 rows=20083 loops=1)",
+      "              Filter: ((status)::text = 'open'::text)",
+      "              Rows Removed by Filter: 79917",
+      "              Buffers: shared hit=3265",
+      "Planning Time: 0.097 ms",
+      "Execution Time: 20.199 ms"
+    ]
+  }
+}

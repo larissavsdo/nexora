@@ -1,0 +1,67 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nexora-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nexora}
+      POSTGRES_USER: ${POSTGRES_USER:-nexora}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-troque_esta_senha}
+    ports: ["5432:5432"]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./sql/procedures.sql:/docker-entrypoint-initdb.d/02-procedures.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nexora} -d ${POSTGRES_DB:-nexora}"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  mongo:
+    image: mongo:7
+    container_name: nexora-mongo
+    ports: ["27017:27017"]
+    volumes: ["mongo_data:/data/db"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  redis:
+    image: redis:7-alpine
+    container_name: nexora-redis
+    ports: ["6379:6379"]
+    volumes: ["redis_data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  api:
+    build: .
+    container_name: nexora-api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    env_file: .env
+    ports: ["8000:8000"]
+    volumes: [".:/app"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      mongo: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
+  worker:
+    build: .
+    container_name: nexora-worker
+    command: python -m app.worker
+    env_file: .env
+    volumes: [".:/app"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      mongo: {condition: service_healthy}
+
+volumes:
+  postgres_data:
+  mongo_data:
+  redis_data:
